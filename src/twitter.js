@@ -1,6 +1,6 @@
 import { TwitterApi } from "twitter-api-v2";
 import { config } from "./config.js";
-import { chunkArray } from "./helpers.js";
+import { chunkArray, sleepSecs } from "./helpers.js";
 
 export const twitterClient = new TwitterApi(config.twitter.bearerToken);
 
@@ -43,6 +43,10 @@ export const getUsers = async (userIds) => {
     });
 
     results.push(res);
+
+    // rate limit is 60 req per min so 1 per second
+    // sleep for 1 second plus a bit of buffer
+    await sleepSecs(1.1);
   }
 
   if (results.length < 2) {
@@ -104,7 +108,7 @@ export const getListMembers = async (listId, options) => {
 };
 
 /**
- * Fetch 100 tweets for a user starting at sinceTweetId
+ * Fetch tweets for a user starting at sinceTweetId
  *
  * WARNING: excludes retweets and replies
  */
@@ -139,6 +143,10 @@ export const fetchTweets = async (userId, sinceTweetId) => {
     if (!latestTweet) {
       latestTweet = tweet;
     }
+
+    // rate limit is 100 req / min so 1.6 per second
+    // sleep for .6 a second + a bit of buffer
+    sleepSecs(0.7);
   }
 
   return {
