@@ -102,3 +102,47 @@ export const getListMembers = async (listId, options) => {
   }
   return creatorUsers;
 };
+
+/**
+ * Fetch 100 tweets for a user starting at sinceTweetId
+ *
+ * WARNING: excludes retweets and replies
+ */
+export const fetchTweets = async (userId, sinceTweetId) => {
+  let tweets = await twitterClient.v2.userTimeline(userId, {
+    exclude: ["retweets", "replies"],
+    expansions: [
+      "attachments.poll_ids",
+      "attachments.media_keys",
+      "author_id",
+      "referenced_tweets.id",
+      "in_reply_to_user_id",
+      "geo.place_id",
+      "entities.mentions.username",
+      "referenced_tweets.id.author_id",
+    ],
+    "tweet.fields":
+      "attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,public_metrics,possibly_sensitive,referenced_tweets,reply_settings,source,text,withheld",
+    "media.fields":
+      "duration_ms,height,media_key,preview_image_url,type,url,width,public_metrics,alt_text,variants",
+    "place.fields":
+      "contained_within,country,country_code,full_name,geo,id,name,place_type",
+    max_results: 100,
+    // use this when updating with latest tweets
+    since_id: sinceTweetId,
+  });
+
+  let latestTweet;
+  let data = [];
+  for await (let tweet of tweets) {
+    data.push(tweet);
+    if (!latestTweet) {
+      latestTweet = tweet;
+    }
+  }
+
+  return {
+    tweets: data,
+    latestTweetId: latestTweet?.id,
+  };
+};
