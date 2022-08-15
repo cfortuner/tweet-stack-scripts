@@ -82,29 +82,35 @@ export const getUsers = async (userIds) => {
   );
 };
 
-/** Warning, no pagination yet */
-// TODO: add pagination
 export const getCreatorListByName = async (userId, listName) => {
   const lists = await twitterClient.v2.listsOwned(userId);
-  return lists.data.data.find((l) => l.name === listName);
+  for await (const list of lists) {
+    if (list.name === listName) {
+      return list;
+    }
+  }
 };
 
 export const getListMembers = async (listId, options) => {
-  const listMembers = await twitterClient.v2.listMembers(listId, {
-    "user.fields":
-      "created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,public_metrics,url,username,verified,withheld",
-    "tweet.fields": "author_id,text,created_at",
-    expansions: ["pinned_tweet_id"],
-  });
-  let creatorUsers = [];
-  let done = false;
-  while (!done) {
-    for await (const member of listMembers) {
-      creatorUsers.push(member);
-    }
-    done = listMembers.done;
+  const listMembers = await twitterClient.v2.listMembers(
+    listId,
+    {
+      "user.fields":
+        "created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,public_metrics,url,username,verified,withheld",
+      "tweet.fields": "author_id,text,created_at",
+      expansions: ["pinned_tweet_id"],
+      max_results: 100,
+    },
+    options
+  );
+  let results = [];
+  for await (const member of listMembers) {
+    results.push(member);
+
+    // rate limit is 60 per min
+    sleepSecs(1.1);
   }
-  return creatorUsers;
+  return results;
 };
 
 /**
@@ -146,7 +152,7 @@ export const fetchTweets = async (userId, sinceTweetId) => {
 
     // rate limit is 100 req / min so 1.6 per second
     // sleep for .6 a second + a bit of buffer
-    sleepSecs(0.7);
+    await sleepSecs(0.7);
   }
 
   return {
