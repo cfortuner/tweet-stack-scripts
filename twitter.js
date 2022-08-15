@@ -34,7 +34,6 @@ export const getUsers = async (userIds) => {
   const batches = chunkArray(userIds, 1);
   let batch;
   while (!!(batch = batches.pop())) {
-    console.log(batch);
     const res = await twitterClient.v2.users(batch, {
       expansions: "pinned_tweet_id",
       "user.fields":
