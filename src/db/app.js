@@ -11,6 +11,6 @@ export const updateUser = async (userId, userData) => {
 export const updateTweet = async (tweetData) => {
   await db
     .collection("tweets")
-    .doc(tweetData.id)
+    .doc(tweetData.tweetId)
     .set(tweetData, { merge: true });
 };

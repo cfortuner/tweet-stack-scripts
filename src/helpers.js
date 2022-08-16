@@ -29,10 +29,7 @@ export const writeFile = (filename, data) => {
   );
 };
 
-export const readFileSyncWithCallback = (filename, callback) => {
-  fs.readFileSync(`./scratch/${filename}`, "utf-8", (err, data) => {
-    callback(JSON.parse(data));
-    if (err) console.log(err);
-    console.log(`Successfully Read to File ${filename}`);
-  });
+export const readFile = (filename) => {
+  const buf = fs.readFileSync(`./scratch/${filename}`, "utf-8");
+  return JSON.parse(buf);
 };

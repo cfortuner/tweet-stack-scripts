@@ -1,3 +1,4 @@
+import fs from "fs";
 /**
  * This script creates / updates the app's firebase collections from the dataSources.
 
@@ -12,7 +13,7 @@
 import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
 import { updateTweet, updateUser } from "../db/app.js";
 import { db } from "../db/firebase.js";
-import { readFileSyncWithCallback, writeFile } from "../helpers.js";
+import { readFile, writeFile } from "../helpers.js";
 import {
   transformTwitterTweetToTweet,
   transformTwitterUserToUser,
@@ -94,87 +95,92 @@ export const runTweetETL = async (twitterUserIds) => {
   let tweetIdToRawData = {};
   let conversationIdToTweetIds = {};
 
-  for (let userId of twitterUserIds) {
-    let userPaginator = db
-      .collection("dataSources")
-      .doc("twitter")
-      .collection("users")
-      .doc(userId)
-      .collection("tweets")
-      .orderBy("id")
-      .limit(batchSize);
-
-    while (true) {
-      const refs = await userPaginator.get();
-      let lastDoc;
-      refs.docs.forEach(async (doc) => {
-        lastDoc = doc;
-
-        const rawData = doc.data();
-        if (!rawData) {
-          throw `Error no data for tweet ${doc.id} user ${userId}`;
-        }
-
-        tweetIdToRawData[rawData.id] = rawData;
-        conversationIdToTweetIds[rawData.conversation_id] = [
-          ...(conversationIdToTweetIds[rawData.conversation_id] || []),
-          rawData.id,
-        ];
-      });
-
-      // last doc
-      if (refs.size < batchSize) {
-        break;
-      }
-
-      // update the paginator
-      userPaginator = db
+  if (!fs.existsSync("./scratch")) {
+    for (let userId of twitterUserIds) {
+      let userPaginator = db
         .collection("dataSources")
         .doc("twitter")
         .collection("users")
         .doc(userId)
         .collection("tweets")
         .orderBy("id")
-        .startAfter(lastDoc)
         .limit(batchSize);
+
+      while (true) {
+        const refs = await userPaginator.get();
+        let lastDoc;
+        refs.docs.forEach(async (doc) => {
+          lastDoc = doc;
+
+          const rawData = doc.data();
+          if (!rawData) {
+            throw `Error no data for tweet ${doc.id} user ${userId}`;
+          }
+
+          tweetIdToRawData[rawData.id] = rawData;
+          conversationIdToTweetIds[rawData.conversation_id] = [
+            ...(conversationIdToTweetIds[rawData.conversation_id] || []),
+            rawData.id,
+          ];
+        });
+
+        // last doc
+        if (refs.size < batchSize) {
+          break;
+        }
+
+        // update the paginator
+        userPaginator = db
+          .collection("dataSources")
+          .doc("twitter")
+          .collection("users")
+          .doc(userId)
+          .collection("tweets")
+          .orderBy("id")
+          .startAfter(lastDoc)
+          .limit(batchSize);
+      }
+
+      // need to store in files b/c its a lot of data
+      writeFile(`${filenamePrefix}${userId}`, {
+        tweetIdToRawData,
+        conversationIdToTweetIds,
+      });
+
+      // reset data
+      tweetIdToRawData = {};
+      conversationIdToTweetIds = {};
     }
-
-    // need to store in files b/c its a lot of data
-    writeFile(`${filenamePrefix}${userId}`, {
-      tweetIdToRawData,
-      conversationIdToTweetIds,
-    });
-
-    // reset data
-    tweetIdToRawData = {};
-    conversationIdToTweetIds = {};
   }
 
   // for each file, read the tweets
   for (let userId of twitterUserIds) {
-    readFileSyncWithCallback(`${filenamePrefix}${userId}`, (fileData) => {
-      // for each tweet, transform the tweet
-      Object.entries(fileData.tweetIdToRawData).forEach(
-        async ([tweetId, rawTweet], count) => {
-          // is this the beginning of a thread?
-          isFirstTweetInThread =
-            rawTweet.conversation_id === tweetId &&
-            fileData.conversationIdToTweetIds[rawTweet.conversation_id].length >
-              1;
+    const fileData = readFile(`${filenamePrefix}${userId}`);
 
-          // transform
-          const tweetData = transformTwitterTweetToTweet(rawData);
+    // for each tweet, transform the tweet
+    Object.entries(fileData.tweetIdToRawData).forEach(
+      async ([tweetId, rawTweet], count) => {
+        // is this the beginning of a thread?
+        const isFirstTweetInThread =
+          rawTweet.conversation_id === tweetId &&
+          fileData.conversationIdToTweetIds[rawTweet.conversation_id].length >
+            1;
 
-          // update tweet in db
-          await updateTweet(tweetData);
+        // transform
+        const tweetData = transformTwitterTweetToTweet(
+          rawTweet,
+          isFirstTweetInThread
+        );
 
-          // don't overwhelm firebase
-          if (count % 500) {
-            await sleepSecs(0.2);
-          }
+        // update tweet in db
+        await updateTweet(tweetData);
+
+        // don't overwhelm firebase
+        if (count % 500) {
+          await sleepSecs(1);
         }
-      );
-    });
+      }
+    );
   }
 };
 

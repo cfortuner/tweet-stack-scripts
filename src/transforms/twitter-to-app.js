@@ -16,6 +16,8 @@ export const transformTwitterTweetToTweet = (
   return {
     authorId: twitterTweet.author_id,
     tweetId: twitterTweet.id,
+    text: twitterTweet.text,
+    publicMetrics: twitterTweet.public_metrics,
     isFirstTweetInThread,
     topicIds: [],
   };
