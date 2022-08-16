@@ -1,7 +1,8 @@
 import admin from "firebase-admin";
+import { config } from "../config.js";
 
 const app = admin.initializeApp({
-  credential: admin.credential.cert("./secrets/firebase-service-account.json"),
+  credential: admin.credential.cert(config.firebase.serviceAccountFilePath),
 });
 
 const auth = admin.auth(app);
