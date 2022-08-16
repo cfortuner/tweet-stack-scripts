@@ -1,3 +1,5 @@
+import fs from "fs";
+
 export const chunkArray = (arr, chunkSize) => {
   if (chunkSize <= 0) return [];
 
@@ -10,4 +12,27 @@ export const chunkArray = (arr, chunkSize) => {
 
 export const sleepSecs = async (sec) => {
   return new Promise((r) => setImmediate(r, 1000 * sec));
+};
+
+export const writeFile = (filename, data) => {
+  try {
+    fs.mkdirSync("scratch");
+  } catch (e) {}
+
+  fs.writeFileSync(
+    `./scratch/${filename}`,
+    JSON.stringify(data, undefined, 4),
+    (err) => {
+      if (err) console.log(err);
+      console.log(`Successfully Written to File ${filename}`);
+    }
+  );
+};
+
+export const readFileSyncWithCallback = (filename, callback) => {
+  fs.readFileSync(`./scratch/${filename}`, "utf-8", (err, data) => {
+    callback(JSON.parse(data));
+    if (err) console.log(err);
+    console.log(`Successfully Read to File ${filename}`);
+  });
 };

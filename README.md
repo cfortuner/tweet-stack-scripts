@@ -16,6 +16,52 @@ dataSources
                ...data
 ```
 
+_users_
+
+```
+users
+    user
+        twitterId
+        bio
+        name
+        topicIds
+```
+
+_tweets_
+
+```
+tweets
+    tweet
+        authorId
+        tweetId
+        isThread
+        isFirstTweet
+        topic_ids
+        topic_priorities
+```
+
+_topics_
+
+```
+topics
+    topic
+        name
+        created_at
+```
+
+_playlists_
+
+```
+playlists
+    playlist
+        authorIds
+        tweetId
+        creatorId
+        topicIds
+        description
+        name
+```
+
 ## Accessing DataSources
 
 ```
