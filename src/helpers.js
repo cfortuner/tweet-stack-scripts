@@ -8,6 +8,6 @@ export const chunkArray = (arr, chunkSize) => {
   return chunks;
 };
 
-export const sleepSec = async (sec) => {
-  return new Promise((r) => setTimeout(r, 1000 * sec));
+export const sleepSecs = async (sec) => {
+  return new Promise((r) => setImmediate(r, 1000 * sec));
 };

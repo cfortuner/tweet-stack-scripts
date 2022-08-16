@@ -30,8 +30,8 @@ export const getUserByUsername = async (username) => {
  * WARNING: Does not handle rate limiting
  */
 export const getUsers = async (userIds) => {
-  const results = [];
-  const batches = chunkArray(userIds, 1);
+  let results = [];
+  const batches = chunkArray(userIds, 100);
   let batch;
   while (!!(batch = batches.pop())) {
     const res = await twitterClient.v2.users(batch, {
@@ -42,44 +42,10 @@ export const getUsers = async (userIds) => {
         "author_id,created_at,context_annotations,public_metrics,text,source,conversation_id,attachments,in_reply_to_user_id,lang,entities,geo,id,referenced_tweets",
     });
 
-    results.push(res);
-
-    // rate limit is 60 req per min so 1 per second
-    // sleep for 1 second plus a bit of buffer
-    await sleepSecs(1.1);
+    results = results.concat(res.data || []);
   }
 
-  if (results.length < 2) {
-    return results;
-  }
-
-  // join results
-  return results.reduce(
-    (prev, curr) => {
-      return {
-        data: prev.data.concat(curr.data),
-        errors: prev.errors.concat(curr.errors || []),
-        includes: {
-          media: prev.includes.media.concat(curr.includes?.media || []),
-          places: prev.includes?.places.concat(curr.includes?.places || []),
-          polls: prev.includes?.polls.concat(curr.includes?.polls || []),
-          tweets: prev.includes?.tweets.concat(curr.includes?.tweets || []),
-          users: prev.includes?.users.concat(curr.includes?.users || []),
-        },
-      };
-    },
-    {
-      data: [],
-      errors: [],
-      includes: {
-        media: [],
-        places: [],
-        polls: [],
-        tweets: [],
-        users: [],
-      },
-    }
-  );
+  return results;
 };
 
 export const getCreatorListByName = async (userId, listName) => {
@@ -106,9 +72,6 @@ export const getListMembers = async (listId, options) => {
   let results = [];
   for await (const member of listMembers) {
     results.push(member);
-
-    // rate limit is 60 per min
-    sleepSecs(1.1);
   }
   return results;
 };
@@ -118,45 +81,75 @@ export const getListMembers = async (listId, options) => {
  *
  * WARNING: excludes retweets and replies
  */
-export const fetchTweets = async (userId, sinceTweetId) => {
-  let tweets = await twitterClient.v2.userTimeline(userId, {
-    exclude: ["retweets", "replies"],
-    expansions: [
-      "attachments.poll_ids",
-      "attachments.media_keys",
-      "author_id",
-      "referenced_tweets.id",
-      "in_reply_to_user_id",
-      "geo.place_id",
-      "entities.mentions.username",
-      "referenced_tweets.id.author_id",
-    ],
-    "tweet.fields":
-      "attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,public_metrics,possibly_sensitive,referenced_tweets,reply_settings,source,text,withheld",
-    "media.fields":
-      "duration_ms,height,media_key,preview_image_url,type,url,width,public_metrics,alt_text,variants",
-    "place.fields":
-      "contained_within,country,country_code,full_name,geo,id,name,place_type",
-    max_results: 100,
-    // use this when updating with latest tweets
-    since_id: sinceTweetId,
-  });
+export const fetchTweetsInTimeline = async (userId, sinceTweetId) => {
+  try {
+    let tweets = await twitterClient.v2.userTimeline(userId, {
+      exclude: ["retweets", "replies"],
+      expansions: [
+        "attachments.poll_ids",
+        "attachments.media_keys",
+        "author_id",
+        "referenced_tweets.id",
+        "in_reply_to_user_id",
+        "geo.place_id",
+        "entities.mentions.username",
+        "referenced_tweets.id.author_id",
+      ],
+      "tweet.fields":
+        "attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,public_metrics,possibly_sensitive,referenced_tweets,reply_settings,source,text,withheld",
+      "media.fields":
+        "duration_ms,height,media_key,preview_image_url,type,url,width,public_metrics,alt_text,variants",
+      "place.fields":
+        "contained_within,country,country_code,full_name,geo,id,name,place_type",
+      max_results: 100,
+      // use this when updating with latest tweets
+      since_id: sinceTweetId,
+    });
 
-  let latestTweet;
-  let data = [];
-  for await (let tweet of tweets) {
-    data.push(tweet);
-    if (!latestTweet) {
-      latestTweet = tweet;
+    const start = Date.now();
+
+    let latestTweet;
+    let data = [];
+
+    while (true) {
+      // store the tweets
+      for (let tweet of tweets) {
+        data.push(tweet);
+        if (!latestTweet) {
+          latestTweet = tweet;
+        }
+      }
+
+      // no more pages
+      if (tweets.done) {
+        break;
+      }
+
+      // rate limit is 100 req in 60 seconds so ~.6 per second + buffer
+      await sleepSecs(0.5);
+
+      // req next page
+      tweets = await tweets.next();
     }
 
-    // rate limit is 100 req / min so 1.6 per second
-    // sleep for .6 a second + a bit of buffer
-    await sleepSecs(0.7);
-  }
+    console.log(
+      `Fetched ${data.length} tweets in`,
+      (Date.now() - start) / 1000,
+      "seconds"
+    );
 
-  return {
-    tweets: data,
-    latestTweetId: latestTweet?.id,
-  };
+    return {
+      tweets: data,
+      latestTweetId: latestTweet?.id,
+    };
+  } catch (e) {
+    console.error(e);
+    console.debug("skipping user tweets");
+
+    // don't return tweets since the req failed.
+    return {
+      tweets: [],
+      latestTweetId: sinceTweetId,
+    };
+  }
 };

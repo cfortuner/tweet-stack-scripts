@@ -1,5 +1,5 @@
 import {
-  fetchTweets,
+  fetchTweetsInTimeline,
   getCreatorListByName,
   getListMembers,
   getUserByUsername,
@@ -8,8 +8,9 @@ import {
 import { getLatestTweetId, updateTweets, updateUser } from "./db/twitter.js";
 
 /**
- * Notes:
- * - need to Handle Rate Limits
+ * A script to download users data and tweet timeline data
+ *
+ * Supports downloading up to the last 800 tweets from a user
  */
 
 // get colin's creator list
@@ -21,24 +22,21 @@ if (!creatorList) {
 
 // get list members
 const listMembers = await getListMembers(creatorList.id);
-const creatorUsers = await getUsers(listMembers.map((lm) => lm.id).slice(0, 2));
 
-// test tweet fetching with with useTweetStack's tweets
-// Fetch user and their pinned tweet
-const tweetStackUser = await getUserByUsername("useTweetStack");
+// get users
+const users = await getUsers(listMembers.map((lm) => lm.id));
 
-// Fetch all tweets for a creator using their timeline
-/**
- * 0. Fetch latestTweetId from firebase
- * 1. fetch tweets from timeline
- * 2. record latest tweet id as last_tweet_id
- */
-const prevLatestTweetId = await getLatestTweetId(tweetStackUser.data.id, true);
-const { tweets, latestTweetId } = await fetchTweets(
-  tweetStackUser.data.id,
-  prevLatestTweetId
-);
+// Fetch all tweets for a user using their timeline
+for (let user of users) {
+  const prevLatestTweetId = await getLatestTweetId(user.id);
 
-// Save data in firebase
-await updateUser(tweetStackUser, true);
-await updateTweets(tweetStackUser.data.id, tweets, latestTweetId, true);
+  // Use the previous 'latestTweetId' so we don't refetch old tweets (to avoid hitting the tweet cap)
+  const { tweets, latestTweetId } = await fetchTweetsInTimeline(
+    user.id,
+    prevLatestTweetId
+  );
+
+  // Save data in firebase
+  await updateUser(user);
+  await updateTweets(user.id, tweets, latestTweetId);
+}
