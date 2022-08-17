@@ -161,15 +161,17 @@ export const runTweetETL = async (twitterUserIds) => {
     Object.entries(fileData.tweetIdToRawData).forEach(
       async ([tweetId, rawTweet], count) => {
         // is this the beginning of a thread?
-        const isFirstTweetInThread =
-          rawTweet.conversation_id === tweetId &&
+        const isFirstTweet = rawTweet.conversation_id === tweetId;
+
+        const isThread =
           fileData.conversationIdToTweetIds[rawTweet.conversation_id].length >
-            1;
+          1;
 
         // transform
         const tweetData = transformTwitterTweetToTweet(
           rawTweet,
-          isFirstTweetInThread
+          isFirstTweet,
+          isThread
         );
 
         // update tweet in db

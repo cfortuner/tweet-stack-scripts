@@ -11,14 +11,16 @@ export const transformTwitterUserToUser = (twitterUser) => {
 
 export const transformTwitterTweetToTweet = (
   twitterTweet,
-  isFirstTweetInThread
+  isFirstTweet,
+  isThread
 ) => {
   return {
     authorId: twitterTweet.author_id,
     tweetId: twitterTweet.id,
     text: twitterTweet.text,
     publicMetrics: twitterTweet.public_metrics,
-    isFirstTweetInThread,
+    isFirstTweet,
+    isThread,
     topicIds: [],
   };
 };
