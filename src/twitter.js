@@ -2,6 +2,7 @@ import { TwitterApi } from "twitter-api-v2";
 import { config } from "./config.js";
 import { chunkArray, sleepSecs } from "./helpers.js";
 
+// API Client docs -> https://github.com/PLhery/node-twitter-api-v2/blob/master/doc/v2.md#Followings
 export const twitterClient = new TwitterApi(config.twitter.bearerToken);
 
 // Common Fields
@@ -22,6 +23,22 @@ export const getUserByUsername = async (username) => {
     "tweet.fields":
       "author_id,created_at,context_annotations,public_metrics,text,source,conversation_id,attachments,in_reply_to_user_id,lang,entities,geo,id,referenced_tweets",
   });
+};
+
+export const getFollowing = async (userId) => {
+  const following = await twitterClient.v2.following(userId, {
+    asPaginator: true,
+    max_results: 100,
+    expansions: "pinned_tweet_id",
+    "user.fields":
+      "created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,public_metrics,url,username,verified,withheld",
+  });
+
+  let userIds = [];
+  for await (const user of following) {
+    userIds.push(user.id);
+  }
+  return userIds;
 };
 
 /**

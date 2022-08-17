@@ -1,6 +1,7 @@
 import {
   fetchTweetsInTimeline,
   getCreatorListByName,
+  getFollowing,
   getListMembers,
   getUserByUsername,
   getUsers,
@@ -17,17 +18,11 @@ import { getLatestTweetId, updateTweets, updateUser } from "../db/twitter.js";
 
 const fetchTwitterData = async () => {
   // get colin's creator list
-  const colinUser = await getUserByUsername("colinfortuner");
-  const creatorList = await getCreatorListByName(colinUser.data.id, "creators");
-  if (!creatorList) {
-    process.exit(0);
-  }
-
-  // get list members
-  const listMembers = await getListMembers(creatorList.id);
+  const tweetStackUser = await getUserByUsername("useTweetStack");
+  const userIds = await getFollowing(tweetStackUser.data.id);
 
   // get users
-  const users = await getUsers(listMembers.map((lm) => lm.id));
+  const users = await getUsers(userIds);
 
   // Fetch all tweets for a user using their timeline
   for (let user of users) {
