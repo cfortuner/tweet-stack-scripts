@@ -4,7 +4,7 @@ import { runTweetETL, runUsersETL } from "./scripts/twitter-ETL.js";
 // Twitter Scripts
 
 // fetch data
-await fetchTwitterData();
+//await fetchTwitterData();
 
 // etls
 const userIds = await runUsersETL();

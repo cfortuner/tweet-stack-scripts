@@ -34,7 +34,7 @@ export const runUsersETL = async () => {
   while (true) {
     const refs = await userPaginator.get();
     let lastDoc;
-    refs.docs.forEach(async (doc) => {
+    for (let doc of refs.docs) {
       lastDoc = doc;
       const twitterUserData = doc.data();
       if (!twitterUserData) {
@@ -56,7 +56,7 @@ export const runUsersETL = async () => {
 
       let userId = userDoc.docs.pop()?.id;
       await updateUser(userId, userData);
-    });
+    }
 
     // last doc
     if (refs.size < batchSize) {
@@ -109,7 +109,7 @@ export const runTweetETL = async (twitterUserIds) => {
       while (true) {
         const refs = await userPaginator.get();
         let lastDoc;
-        refs.docs.forEach(async (doc) => {
+        for (let doc of refs.docs) {
           lastDoc = doc;
 
           const rawData = doc.data();
@@ -122,7 +122,7 @@ export const runTweetETL = async (twitterUserIds) => {
             ...(conversationIdToTweetIds[rawData.conversation_id] || []),
             rawData.id,
           ];
-        });
+        }
 
         // last doc
         if (refs.size < batchSize) {
@@ -158,31 +158,31 @@ export const runTweetETL = async (twitterUserIds) => {
     const fileData = readFile(`${filenamePrefix}${userId}`);
 
     // for each tweet, transform the tweet
-    Object.entries(fileData.tweetIdToRawData).forEach(
-      async ([tweetId, rawTweet], count) => {
-        // is this the beginning of a thread?
-        const isFirstTweet = rawTweet.conversation_id === tweetId;
+    let count = 0;
+    for (let [tweetId, rawTweet] of Object.entries(fileData.tweetIdToRawData)) {
+      // is this the beginning of a thread?
+      const isFirstTweet = rawTweet.conversation_id === tweetId;
 
-        const isThread =
-          fileData.conversationIdToTweetIds[rawTweet.conversation_id].length >
-          1;
+      const isThread =
+        fileData.conversationIdToTweetIds[rawTweet.conversation_id].length > 1;
 
-        // transform
-        const tweetData = transformTwitterTweetToTweet(
-          rawTweet,
-          isFirstTweet,
-          isThread
-        );
+      // transform
+      const tweetData = transformTwitterTweetToTweet(
+        rawTweet,
+        isFirstTweet,
+        isThread
+      );
 
-        // update tweet in db
-        await updateTweet(tweetData);
+      // update tweet in db
+      await updateTweet(tweetData);
 
-        // don't overwhelm firebase
-        if (count % 500) {
-          await sleepSecs(1);
-        }
+      // don't overwhelm firebase
+      if (count % 500 === 0) {
+        await sleepSecs(0.5);
       }
-    );
+
+      count += 1;
+    }
   }
 };
 
