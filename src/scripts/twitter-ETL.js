@@ -90,7 +90,7 @@ export const runUsersETL = async () => {
  */
 
 export const runTweetETL = async (twitterUserIds) => {
-  const filenamePrefix = "runTweetETL_";
+  const destFolder = "runTweetETL";
   const batchSize = 100;
   let tweetIdToRawData = {};
   let conversationIdToTweetIds = {};
@@ -142,7 +142,7 @@ export const runTweetETL = async (twitterUserIds) => {
       }
 
       // need to store in files b/c its a lot of data
-      writeFile(`${filenamePrefix}${userId}`, {
+      writeFile(destFolder, userId, {
         tweetIdToRawData,
         conversationIdToTweetIds,
       });
@@ -155,7 +155,7 @@ export const runTweetETL = async (twitterUserIds) => {
 
   // for each file, read the tweets
   for (let userId of twitterUserIds) {
-    const fileData = readFile(`${filenamePrefix}${userId}`);
+    const fileData = readFile(destFolder, userId);
 
     // for each tweet, transform the tweet
     let count = 0;

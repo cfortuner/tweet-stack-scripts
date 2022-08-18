@@ -14,13 +14,13 @@ export const sleepSecs = async (sec) => {
   return new Promise((r) => setImmediate(r, 1000 * sec));
 };
 
-export const writeFile = (filename, data) => {
+export const writeFile = (folder, filename, data) => {
   try {
-    fs.mkdirSync("scratch");
+    fs.mkdirSync(folder);
   } catch (e) {}
 
   fs.writeFileSync(
-    `./scratch/${filename}`,
+    `./${folder}/${filename}`,
     JSON.stringify(data, undefined, 4),
     (err) => {
       if (err) console.log(err);
@@ -29,7 +29,7 @@ export const writeFile = (filename, data) => {
   );
 };
 
-export const readFile = (filename) => {
-  const buf = fs.readFileSync(`./scratch/${filename}`, "utf-8");
+export const readFile = (folder, filename) => {
+  const buf = fs.readFileSync(`./${folder}/${filename}`, "utf-8");
   return JSON.parse(buf);
 };
