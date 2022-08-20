@@ -12,5 +12,8 @@ export const config = {
     password: process.env.TWITTER_PASSWORD,
     bearerToken: process.env.TWITTER_BEARER_TOKEN,
   },
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY,
+  },
 };
 export default config;

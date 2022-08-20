@@ -25,7 +25,7 @@ export const downloadTransformedTweets = async () => {
     }
 
     // store in file
-    writeFile("downloadTransformedTweets", batchId, tweetData);
+    writeFile("scratch/downloadTransformedTweets", batchId, tweetData);
 
     tweetData = [];
 

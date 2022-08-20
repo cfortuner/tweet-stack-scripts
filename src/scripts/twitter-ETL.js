@@ -90,12 +90,12 @@ export const runUsersETL = async () => {
  */
 
 export const runTweetETL = async (twitterUserIds) => {
-  const destFolder = "runTweetETL";
+  const destFolder = "./scratch/runTweetETL";
   const batchSize = 100;
   let tweetIdToRawData = {};
   let conversationIdToTweetIds = {};
 
-  if (!fs.existsSync("./scratch")) {
+  if (!fs.existsSync(destFolder)) {
     for (let userId of twitterUserIds) {
       let userPaginator = db
         .collection("dataSources")
@@ -185,13 +185,3 @@ export const runTweetETL = async (twitterUserIds) => {
     }
   }
 };
-
-// ---- Part 2 ----
-
-/**
- * Update Topics
- *
- * 1. Iterate through tweets
- * 2. Pull out topics by running topic collection code
- * 3. Update topics, users, tweets and playlists.
- */
