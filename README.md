@@ -1,6 +1,17 @@
 # foundation
 
-## DB Schema
+## setup
+
+NOTE: pip install may fail on tokenizers. follow steps here to install https://huggingface.co/docs/tokenizers/installation
+
+```
+npm i
+pip install -r requirements.txt
+```
+
+## Notes
+
+### DB Schema
 
 _dataSources_
 
