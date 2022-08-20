@@ -6,29 +6,38 @@ import { findEduContent } from "./scripts/filter-tweets-for-edu-content.js";
 import { runTopicClassification } from "./topic-classification/generate.js";
 import { readFile, writeFile } from "./helpers.js";
 
-/* Fetch and transform data */
+// --------------------
+// 1) FETCH & TRANSFORM
+// --------------------
+
 // await fetchTwitterData();
 // const userIds = await runUsersETL();
 // await runTweetETL(userIds);
 
-/* Tweet Analysis */
-// await downloadTransformedTweets();
+// --------------------
+// 2) THREAD FILTERING
+// --------------------
 
-// load the transform tweets and find the educational content
+// await downloadTransformedTweets();
 // findEduContent("scratch/downloadTransformedTweets");
 
+// --------------------
+// 3) TOPIC CLASSIFICATION
+// --------------------
+
 const tweets = readFile("scratch/eduContent", "all");
-// let limit = 10;
-// let results = [];
-// for (let tweet of tweets) {
-//   limit -= 1;
-//   const topics = await runTopicClassification(tweet.text);
-//   results.push({
-//     tweet,
-//     topics,
-//   });
-//   if (limit === 0) {
-//     break;
-//   }
-// }
-// writeFile("scratch/topic-classification", "openai.json", results);
+let limit = 100;
+let results = [];
+for (let tweet of tweets) {
+  limit -= 1;
+  const topics = await runTopicClassification(tweet.text);
+  results.push({
+    tweet,
+    topics,
+  });
+  if (limit === 0) {
+    break;
+  }
+}
+
+writeFile("scratch/topic-classification", "openai.json", results);
