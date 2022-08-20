@@ -44,7 +44,7 @@ for tweetWithTopic in tweetsWithTopics:
         "keywords": keywords
     })
 
-with open("./scratch/topic-extraction/keybert.json", "w+") as outfile:
+with open("../scratch/topic-extraction/keybert.json", "w+") as outfile:
     outfile.write(json.dumps(res, indent=4))
 
 # ----- BERTopic -----
