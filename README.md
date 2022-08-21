@@ -9,6 +9,27 @@ npm i
 pip install -r requirements.txt
 ```
 
+## Commands
+
+Run index.js
+
+```
+npm run start
+```
+
+Prepare finetuning dataset
+
+```
+npm run finetuning:prepare
+```
+
+## Fine tuned model ids
+
+8/21
+trained on: file-crEG81FiJRyYyVk5WrT9LjF6
+model: davinci:ft-personal-2022-08-21-13-54-08
+resultfile: file-PnA3yRP1qTzPWZLS1I3ALkVV
+
 ## Notes
 
 ### DB Schema

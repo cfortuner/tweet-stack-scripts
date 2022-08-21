@@ -3,7 +3,7 @@ import { downloadTransformedTweets } from "./scripts/download-transformed-tweets
 import fetchTwitterData from "./scripts/fetch-twitter-data.js";
 import { runTweetETL, runUsersETL } from "./scripts/twitter-ETL.js";
 import { findEduContent } from "./scripts/filter-tweets-for-edu-content.js";
-import { runTopicClassification } from "./topic-classification/generate.js";
+import { generateFinetuningTopicsDataset } from "./topic-classification/topic-classification.js";
 import { readFile, writeFile } from "./helpers.js";
 
 // --------------------
@@ -25,19 +25,7 @@ import { readFile, writeFile } from "./helpers.js";
 // 3) TOPIC CLASSIFICATION
 // --------------------
 
-const tweets = readFile("scratch/eduContent", "all");
-let limit = 100;
-let results = [];
-for (let tweet of tweets) {
-  limit -= 1;
-  const topics = await runTopicClassification(tweet.text);
-  results.push({
-    tweet,
-    topics,
-  });
-  if (limit === 0) {
-    break;
-  }
-}
-
-writeFile("scratch/topic-classification", "openai.json", results);
+// This is just a quick way to get a bunch of prompts and reasonable results.
+// results are cached unless you override with true.
+// if you fetch new data, you'll have to inspect / update each completion in the resulting file
+await generateFinetuningTopicsDataset("scratch/eduContent", "all", 100, true);

@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "finetune:prepare": "openai tools fine_tunes.prepare_data -f ./scratch/topic-classification/finetuning-topics.json",
+    "finetune:train": "source .env && openai  -k $OPENAI_API_KEY api fine_tunes.create -t ./scratch/topic-classification/finetuning-topics_prepared.jsonl -m davinci"
   },
   "repository": {
     "type": "git",
