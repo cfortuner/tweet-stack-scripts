@@ -21,73 +21,55 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
-# Fetch tweets from file
-f = open("./scratch/topic-classification/openai.json")
-tweetsWithTopics = json.load(f)
-f.close()
 
+# ----- BERTopic -----
+# Fetch tweets from file
+# f = open("./allTopics.json")
+# topics = json.load(f)
+# f.close()
+# topic_model = BERTopic(n_gram_range=(1, 2))
+# topics, probs = topic_model.fit_transform(topics)
+# topic_labels = topic_model.generate_topic_labels(
+#     nr_words=1, topic_prefix=False, separator=" ")
+
+# res = []
+# for label in topic_labels:
+#     cleaned = label.split(' ')
+#     ans = []
+#     prev = ""
+#     for clean in cleaned:
+#         if clean == prev:
+#             continue
+#         ans.append(clean)
+#         prev = clean
+#     res.append(" ".join(ans))
+
+
+# with open("./allTopicLabels.json", "w+") as outfile:
+#     outfile.write(json.dumps(list(set(res)), indent=4))
 
 # --- KeyBERT ---
-vectorizer = KeyphraseCountVectorizer()
+# Fetch tweets from file
+f = open("./allTopicLabels.json")
+labels = json.load(f)
+f.close()
+f2 = open("./tweetsWithTopics.json")
+tweetsWithTopics = json.load(f2)
+f2.close()
+
 kw_model = KeyBERT()
 
 res = []
-for tweetWithTopic in tweetsWithTopics:
-    # KeyBERT
+for tweet in tweetsWithTopics:
     keywords = kw_model.extract_keywords(
-        tweetWithTopic['topics'][0]['text'], vectorizer=vectorizer)
-    print(tweetWithTopic['topics'][0]['text'])
-    print(keywords)
+        tweet['topics'], keyphrase_ngram_range=(1, 3), seed_keywords=labels)
     res.append({
-        "tweet": tweetWithTopic["tweet"],
-        "topics": tweetWithTopic["topics"],
-        "keywords": keywords
+        "tweet": tweet['tweet'],
+        "topics": {
+            'phrases': tweet['topics'],
+            'keywords': keywords
+        }
     })
 
-with open("../scratch/topic-extraction/keybert.json", "w+") as outfile:
+with open("./allTweetsWithTopicsAndKeywords.json", "w+") as outfile:
     outfile.write(json.dumps(res, indent=4))
-
-# ----- BERTopic -----
-# topic_model = BERTopic(n_gram_range=(1, 2))
-# topics, probs = topic_model.fit_transform(texts)
-# # topic_labels = topic_model.generate_topic_labels(
-# #     nr_words=1, topic_prefix=False, separator=" ")
-
-# topic_docs = {topic: {
-#     'topNLabels': topic_model.get_topic(topic),
-#     'docs': []
-# } for topic in set(topics)}
-
-# for topic, doc in zip(topics, texts):
-#     topic_docs[topic]['docs'].append(doc)
-
-# json_object = json.dumps(topic_docs, indent=4)
-
-# # Writing to sample.json
-# with open("./scratch/keyword-extraction/topics.json", "w") as outfile:
-#     outfile.write(json_object)
-
-
-# # Mapping topics back to tweets
-# tweetMap = {}
-# for tweet in tweets:
-#     tweetMap[tweet['text']] = tweet
-
-# tweetsWithTopics = []
-
-# # now for each topic, find tweet ids
-# with open("./scratch/keyword-extraction/topics.json", "r") as outfile:
-#     topic_docs = json.loads(outfile.read())
-#     for topic in topic_docs.items():
-#         topNLabels = topic[1]['topNLabels']
-#         docs = topic[1]['docs']
-
-#         for doc in docs:
-#             tweetsWithTopics.append({
-#                 'tweet': tweetMap[doc],
-#                 'topics': topNLabels
-#             })
-
-# # store the file here
-# with open("./scratch/keyword-extraction/tweetsWithTopics.json", "w") as outfile:
-#     outfile.write(json.dumps(tweetsWithTopics, indent=4))

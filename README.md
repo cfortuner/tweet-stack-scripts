@@ -81,6 +81,14 @@ topics
         created_at
 ```
 
+```
+phrases
+    phrase
+        name
+        topic_ids
+        topic_priorities
+```
+
 _playlists_
 
 ```

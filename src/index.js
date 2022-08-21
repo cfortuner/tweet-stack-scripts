@@ -36,7 +36,7 @@ import { readFile, writeFile } from "./helpers.js";
 // await generateFinetuningTopicsDataset("scratch/eduContent", "all", 100, true);
 
 // testing classification
-let res;
+// let res;
 //res = await runTopicClassification(
 //   "Why I think NFTs will force Hollywood, Harvard, Salesforce, Nintendo etc to reinvent themselves \n\nA thread about how NFTs will shake things up:"
 // );
@@ -51,3 +51,75 @@ let res;
 // console.log(res);
 
 // await getTopicPhrasesFromTweets("./scratch/eduContent", "all");
+
+// ---------
+// further classification
+// ---------
+
+// const tweets = readFile("./", "tweetsWithTopicPhrases.json");
+// const hyphenated = readFile("./", "hyphenated copy.json");
+// const hyphenatedExact = readFile("./", "hyphenated.json");
+
+// const allTopics = [];
+// const tweetsWithTopics = [];
+
+// let count = 0;
+// for (let tweet of tweets) {
+//   let topicResponse;
+//   try {
+//     topicResponse = tweet.topics.pop();
+//   } catch (e) {
+//     count += 1;
+//     console.log(e);
+//     continue;
+//   }
+//   let topics = topicResponse.text.replace(/(\r\n|\n|\r)/gm, "").split("- ");
+//   topics = topics
+//     .filter((t) => t !== "")
+//     .reduce((prev, top) => {
+//       const indexOf = hyphenatedExact.indexOf(top);
+//       if (indexOf >= 0) {
+//         const hyphRes = hyphenated[indexOf].split("*").filter((t) => t !== "");
+//         return [...prev, ...hyphRes];
+//       } else {
+//         return [...prev, top];
+//       }
+//     }, []);
+
+//   for (let topic of topics) {
+//     if (hyphenated.includes(topic)) {
+//       hyphenated.push(topic);
+//     }
+//     allTopics.push(topic);
+//   }
+
+//   tweetsWithTopics.push({
+//     tweet: tweet.tweet,
+//     topics,
+//   });
+// }
+
+// writeFile("./", "allTopics.json", allTopics);
+// writeFile("./", "tweetsWithTopics.json", tweetsWithTopics);
+
+// we have all topics,
+
+// const f = readFile("./", "allTweetsWithTopicsAndKeywords.json");
+
+// let res = [];
+// for (let tweet of f) {
+//   let topics = [];
+//   for (let i = 0; i < tweet.topics.phrases.length; i++) {
+//     let keywords = tweet.topics.keywords;
+//     topics.push({
+//       phrase: tweet.topics.phrases[i],
+//       keywords: keywords[i],
+//     });
+//   }
+
+//   res.push({
+//     tweet: tweet.tweet,
+//     topics,
+//   });
+// }
+// writeFile("./", "final.json", res);
