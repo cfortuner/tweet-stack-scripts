@@ -57,6 +57,7 @@ users
         bio
         name
         topicIds
+        phraseIds
 ```
 
 _tweets_
@@ -68,8 +69,7 @@ tweets
         tweetId
         isThread
         isFirstTweet
-        topic_ids
-        topic_priorities
+        phrase_ids
 ```
 
 _topics_

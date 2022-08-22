@@ -14,3 +14,35 @@ export const updateTweet = async (tweetData) => {
     .doc(tweetData.tweetId)
     .set(tweetData, { merge: true });
 };
+
+export const addTopic = async (topicData) => {
+  const exists = await db
+    .collection("topics")
+    .where("value", "==", topicData.value)
+    .get();
+  if (exists) {
+    return;
+  }
+
+  await db.collection("topics").add({
+    value: topicData.value,
+    createdAt: FirebaseFirestore.Timestamp.now(),
+  });
+};
+
+export const addPhrase = async (phraseData) => {
+  const exists = await db
+    .collection("phrases")
+    .where("value", "==", phraseData.value)
+    .get();
+  if (exists) {
+    return;
+  }
+
+  await db.collection("phrases").add({
+    value: phraseData.value,
+    topicIds: phraseData.topic_ids,
+    topicPriorities: phraseData.topic_priorities,
+    createdAt: FirebaseFirestore.Timestamp.now(),
+  });
+};
