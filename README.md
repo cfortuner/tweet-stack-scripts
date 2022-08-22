@@ -54,7 +54,7 @@ _users_
 users
     user
         twitterId
-        bio
+        description
         name
         topicIds
         phraseIds
@@ -130,6 +130,7 @@ NOT INDEXED
 - twitterId
 - topic_ids
 - phrase_ids
+- tweet_count
 
 #### Threads Index
 
@@ -137,16 +138,20 @@ https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/inst
 
 Thread Index contains:
 
+- authorId
 - authorTwitterUsername
 - authorName
 - topics
 - phrases
 - text (for all threads)
-- likes
-- reweets
+- likeCount
+- reweetCount
+- quoteCount
 
 NOT INDEXED
 
+- tweetType
+- replyCount
 - authorId
 - authorTwitterId
 - firstTweetId

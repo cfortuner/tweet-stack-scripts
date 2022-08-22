@@ -17,6 +17,7 @@ import {
   getPhrasesByIds,
   getTopicsByIds,
   updateTweet,
+  updateUsersIndex,
 } from "./db/app.js";
 import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
 import { updateUser } from "./db/twitter.js";
@@ -79,62 +80,12 @@ import { updateUser } from "./db/twitter.js";
  *    get usersIndexRecord document id
  *    update userDoc with usersIndexRecord document id
  */
-
-export const updateUsersIndex = async () => {
-  const userDocRefs = await db.collection("users").listDocuments();
-  for (const userDocRef of userDocRefs) {
-    const userDoc = await userDocRef.get();
-    const userData = userDoc.data();
-    let userIndexRecordId = userData.userIndexRecordId;
-    const phraseIds = userData.phraseIds || [];
-
-    // get Phrases
-    const phraseDocs = await getPhrasesByIds(phraseIds);
-    const phraseDatas = phraseDocs.map((phraseDoc) => phraseDoc.data());
-    const phrases = phraseDatas.map((phraseData) => phraseData.value);
-
-    // Update Topics and Topic Ids
-    let topicIds = [];
-    let topics = [];
-    for (const phraseData of phraseDatas) {
-      const topicDocs = await getTopicsByIds(phraseData.topicIds);
-      topics = topics.concat(topicDocs.map((topicDoc) => topicDoc.data().name));
-      topicIds = topicIds.concat(topicDocs.map((doc) => doc.id));
-    }
-
-    // Dedupe
-    phrases = Array.from(new Set(phrases));
-    topics = Array.from(new Set(topics));
-    topicIds = Array.from(new Set(topicIds));
-
-    // Create Record
-    const userIndexRecord = {
-      twitterUsername: userData.twitterUsername,
-      name: userData.name,
-      description: description,
-      followersCount: userData.publicMetrics.followers_count,
-      userId: userDoc.id,
-      twitterId: userData.twitterId,
-      phrases,
-      topics,
-      topicIds,
-      phraseIds,
-    };
-
-    userIndexRecordId = await updateUserIndexRecord(
-      userIndexRecordId,
-      userIndexRecord
-    );
-
-    // store the index record id in the user doc for future use
-    await updateUser(userDoc.id, { userIndexRecordId });
-  }
-};
+// await updateUsersIndex();
 
 /**
  * Update Threads index
  *
- * get tweets that are first tweet & thread in firebase
+ * get tweets that are tweetType='Educational' && first tweet && thread in firebase
  * for each thread:
  *    create threadIndexRecord
  */
