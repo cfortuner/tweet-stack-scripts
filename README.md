@@ -108,3 +108,48 @@ playlists
 db.collection('dataSources').doc('twitter').collection('users')
 db.collection('dataSources').doc('twitter').collection('users').doc(userId).collection(tweets).document(tweetId)
 ```
+
+## Updating the Indices
+
+#### Users Index
+
+https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search?tab=usage
+
+User Fields
+
+- twitterUserName
+- name
+- description
+- topics
+- phrases
+- followersCount
+
+NOT INDEXED
+
+- userId
+- twitterId
+- topic_ids
+- phrase_ids
+
+#### Threads Index
+
+https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search-g20h?tab=usage
+
+Thread Index contains:
+
+- authorTwitterUsername
+- authorName
+- topics
+- phrases
+- text (for all threads)
+- likes
+- reweets
+
+NOT INDEXED
+
+- authorId
+- authorTwitterId
+- firstTweetId
+- conversationIds
+- topicIds
+- phraseIds

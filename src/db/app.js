@@ -47,3 +47,40 @@ export const addPhrase = async (phraseData) => {
     createdAt: firestore.FieldValue.serverTimestamp(),
   });
 };
+
+export const getPhraseById = async (phraseId) => {
+  const ss = await db.collection("phrases").get(phraseId);
+  return ss.docs.pop();
+};
+export const getTopicById = async (topicId) => {
+  const ss = await db.collection("topics").get(topicId);
+  return ss.docs.pop();
+};
+
+export const getTopicsByIds = async (topicIds) => {
+  const ss = await db.collection("topics").where("id", "in", topicIds).get();
+  return ss.docs;
+};
+
+export const getPhrasesByIds = async (phraseIds) => {
+  const ss = await db.collection("phrases").where("id", "in", phraseIds).get();
+  return ss.docs;
+};
+
+// index helpers
+
+export const updateUserIndexRecord = async (
+  userIndexRecordId,
+  userIndexRecord
+) => {
+  if (!userIndexRecordId) {
+    const doc = await db.collection("users-index").add(userIndexRecord);
+    return doc.id;
+  } else {
+    await db
+      .collection("users-index")
+      .doc(userIndexRecordId)
+      .set(userIndexRecord);
+    return userIndexRecordId;
+  }
+};
