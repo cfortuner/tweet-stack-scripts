@@ -15,31 +15,32 @@ export const updateTweet = async (tweetData) => {
     .set(tweetData, { merge: true });
 };
 
+export const getTopicByName = async (topicName) => {
+  return await db.collection("topics").where("name", "==", topicName).get();
+};
+
 export const addTopic = async (topicData) => {
-  const exists = await db
-    .collection("topics")
-    .where("value", "==", topicData.value)
-    .get();
-  if (exists) {
-    return;
+  const topicSnapshot = await getTopicByName(topicData.name);
+  if (topicSnapshot) {
+    return topicSnapshot;
   }
 
-  await db.collection("topics").add({
-    value: topicData.value,
+  return await db.collection("topics").add({
+    value: topicData.name,
     createdAt: FirebaseFirestore.Timestamp.now(),
   });
 };
 
 export const addPhrase = async (phraseData) => {
-  const exists = await db
+  const phraseDoc = await db
     .collection("phrases")
     .where("value", "==", phraseData.value)
     .get();
-  if (exists) {
-    return;
+  if (phraseDoc) {
+    return phraseDoc;
   }
 
-  await db.collection("phrases").add({
+  return await db.collection("phrases").add({
     value: phraseData.value,
     topicIds: phraseData.topic_ids,
     topicPriorities: phraseData.topic_priorities,

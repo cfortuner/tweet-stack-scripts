@@ -9,7 +9,9 @@ import {
   runFineTunedTopicClassification,
   runTopicClassification,
 } from "./topic-classification/topic-classification.js";
-import { readFile, writeFile } from "./helpers.js";
+import { chunkArray, readFile, writeFile } from "./helpers.js";
+import { addPhrase, addTopic } from "./db/app.js";
+import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
 
 // --------------------
 // 1) FETCH & TRANSFORM
@@ -30,96 +32,52 @@ import { readFile, writeFile } from "./helpers.js";
 // 3) TOPIC CLASSIFICATION
 // --------------------
 
-// This is just a quick way to get a bunch of prompts and reasonable results.
-// results are cached unless you override with true.
-// if you fetch new data, you'll have to inspect / update each completion in the resulting file
-// await generateFinetuningTopicsDataset("scratch/eduContent", "all", 100, true);
+// TODO: Create a repeatable process for topic classification
 
-// testing classification
-// let res;
-//res = await runTopicClassification(
-//   "Why I think NFTs will force Hollywood, Harvard, Salesforce, Nintendo etc to reinvent themselves \n\nA thread about how NFTs will shake things up:"
-// );
-// console.log(res);
-// res = await runTopicClassification(
-//   "There's never been a harder time to hire than right now.\n\nThese 5 threads show you the step-by-step process I used to recruit A+ players when no one else could.\n\nThe Hiring Thread of All Threads 🧵👇"
-// );
-// console.log(res);
-// res = await runTopicClassification(
-//   "Why start a startup? When something is so broken and you know you can fix it. Film schools cost $250K, admit 50, and rely on “who you know” for jobs. We changed that: teaching millions of learners, paying $10M+ to workers we hire. After 5 pivots here’s how @creatorup did it. A 🧵"
-// );
-// console.log(res);
+// --------------------
+// 4) ADD Topics
+// --------------------
 
-// await getTopicPhrasesFromTweets("./scratch/eduContent", "all");
+const tweetsAndTopics = readFile("./", "final.json");
 
-// ---------
-// further classification
-// ---------
+const chunks = chunkArray(tweetsAndTopics, 10);
 
-// const tweets = readFile("./", "tweetsWithTopicPhrases.json");
-// const hyphenated = readFile("./", "hyphenated copy.json");
-// const hyphenatedExact = readFile("./", "hyphenated.json");
+const addTopicsAndPhrases = async (tweetAndTopic) => {
+  const { tweet, topics } = tweetAndTopic;
 
-// const allTopics = [];
-// const tweetsWithTopics = [];
+  // add topics and phrases
+  for (let topic of topics) {
+    let topicPriorities = [];
+    for (let [keyword, priority] of topic.keywords) {
+      const topicDoc = await addTopic({
+        value: keyword,
+      });
+      topicPriorities.push({
+        topicId: topicDoc.id,
+        priority,
+      });
+    }
 
-// let count = 0;
-// for (let tweet of tweets) {
-//   let topicResponse;
-//   try {
-//     topicResponse = tweet.topics.pop();
-//   } catch (e) {
-//     count += 1;
-//     console.log(e);
-//     continue;
-//   }
-//   let topics = topicResponse.text.replace(/(\r\n|\n|\r)/gm, "").split("- ");
-//   topics = topics
-//     .filter((t) => t !== "")
-//     .reduce((prev, top) => {
-//       const indexOf = hyphenatedExact.indexOf(top);
-//       if (indexOf >= 0) {
-//         const hyphRes = hyphenated[indexOf].split("*").filter((t) => t !== "");
-//         return [...prev, ...hyphRes];
-//       } else {
-//         return [...prev, top];
-//       }
-//     }, []);
+    await addPhrase({
+      value: topic.phrase,
+      topicPriorities,
+    });
+  }
+};
 
-//   for (let topic of topics) {
-//     if (hyphenated.includes(topic)) {
-//       hyphenated.push(topic);
-//     }
-//     allTopics.push(topic);
-//   }
+// keep track of failured chunks
+const failures = [];
 
-//   tweetsWithTopics.push({
-//     tweet: tweet.tweet,
-//     topics,
-//   });
-// }
+while (chunks.length) {
+  const chunk = chunks.pop();
 
-// writeFile("./", "allTopics.json", allTopics);
-// writeFile("./", "tweetsWithTopics.json", tweetsWithTopics);
+  try {
+    await Promise.all(chunk.map((data) => addTopicsAndPhrases(data)));
 
-// we have all topics,
+    sleepSecs(1);
+  } catch (e) {
+    failures = failures.concat(chunk);
+  }
+}
 
-// const f = readFile("./", "allTweetsWithTopicsAndKeywords.json");
-
-// let res = [];
-// for (let tweet of f) {
-//   let topics = [];
-//   for (let i = 0; i < tweet.topics.phrases.length; i++) {
-//     let keywords = tweet.topics.keywords;
-//     topics.push({
-//       phrase: tweet.topics.phrases[i],
-//       keywords: keywords[i],
-//     });
-//   }
-
-//   res.push({
-//     tweet: tweet.tweet,
-//     topics,
-//   });
-// }
-// writeFile("./", "final.json", res);
+writeFile("./", "failures.json", failures);
