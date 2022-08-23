@@ -99,7 +99,7 @@ export const updateIndex = async () => {
     const indexRecord = await createIndexRecord(tweetData);
     await updateIndexRecord(tweetData.indexRecordId, indexRecord);
     await updateTweet(tweetDoc.id, {
-      indexRecordId,
+      indexRecordId: tweetData.indexRecordId,
     });
   };
 
