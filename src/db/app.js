@@ -97,9 +97,12 @@ export const updateIndex = async () => {
   const processDoc = async (tweetDoc) => {
     const tweetData = tweetDoc.data();
     const indexRecord = await createIndexRecord(tweetData);
-    await updateIndexRecord(tweetData.indexRecordId, indexRecord);
+    const indexRecordId = await updateIndexRecord(
+      tweetData.indexRecordId,
+      indexRecord
+    );
     await updateTweet(tweetDoc.id, {
-      indexRecordId: tweetData.indexRecordId,
+      indexRecordId,
     });
   };
 
@@ -129,23 +132,33 @@ export const createIndexRecord = async (tweetData) => {
   );
   const entireThreadText = getEntireThreadText(conversationTweetDatas);
 
-  const phraseDocs = await getPhrasesByIds(tweetData.phraseIds);
-  const phraseDatas = phraseDocs.map((phraseDoc) => phraseDoc.data());
-  let phraseIds = phraseDocs.map((d) => d.id);
-  phraseIds = Array.from(new Set(phraseIds));
-  let phrases = phraseDatas.map((phrase) => phrase.value);
-  phrases = Array.from(new Set(phrases));
-
-  let topicIds = [];
+  let phraseIds = [];
+  let phrases = [];
   let topics = [];
-  for (const phraseData of phraseDatas) {
-    const topicDocs = await getTopicsByIds(phraseData.topicIds);
-    const topicDatas = topicDocs.map((t) => t.data());
-    topics = topics.concat(topicDatas.map((d) => d.value));
-    topicIds = topicIds.concat(topicDocs.map((topicDoc) => topicDoc.id));
+  let topicIds = [];
+
+  // phrases
+  if (tweetData.phraseIds?.length) {
+    const phraseDocs = await getPhrasesByIds(tweetData.phraseIds);
+    const phraseDatas = phraseDocs.map((phraseDoc) => phraseDoc.data());
+    phraseIds = phraseDocs.map((d) => d.id);
+    phraseIds = Array.from(new Set(phraseIds));
+    phrases = phraseDatas.map((phrase) => phrase.value);
+    phrases = Array.from(new Set(phrases));
+
+    // topics
+    for (const phraseData of phraseDatas) {
+      if (!phraseData.topicIds.length) {
+        continue;
+      }
+      const topicDocs = await getTopicsByIds(phraseData.topicIds);
+      const topicDatas = topicDocs.map((t) => t.data());
+      topics = topics.concat(topicDatas.map((d) => d.value));
+      topicIds = topicIds.concat(topicDocs.map((topicDoc) => topicDoc.id));
+    }
+    topics = Array.from(new Set(topics));
+    topicIds = Array.from(new Set(topicIds));
   }
-  topics = Array.from(new Set(topics));
-  topicIds = Array.from(new Set(topicIds));
 
   // twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
   return {
@@ -175,7 +188,7 @@ export const createIndexRecord = async (tweetData) => {
 export const updateIndexRecord = async (indexRecordId, indexRecord) => {
   if (indexRecordId) {
     await db
-      .collection("index")
+      .collection("thread-index")
       .doc(indexRecordId)
       .set(indexRecord, { merge: true });
     return indexRecordId;
