@@ -161,7 +161,6 @@ NOT INDEXED
 - replyCount
 - userId
 - twitterUserId
-- firstTweetId
 - conversationIds
 - topicIds
 - phraseIds
