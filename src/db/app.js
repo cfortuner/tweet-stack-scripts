@@ -98,6 +98,9 @@ export const updateIndex = async () => {
     const tweetData = tweetDoc.data();
     const indexRecord = await createIndexRecord(tweetData);
     await updateIndexRecord(tweetData.indexRecordId, indexRecord);
+    await updateTweet(tweetDoc.id, {
+      indexRecordId,
+    });
   };
 
   const failures = [];
@@ -197,33 +200,14 @@ export const getConversation = async (firstTweetId, twitterUserId) => {
 };
 
 export const getEntireThreadText = (tweetDatas) => {
-  let tweetIdToTweet = {};
-  tweetDatas.forEach((td) => {
-    tweetIdToTweet[td.id] = td;
-  });
-
-  const lastTweetId = tweetDatas
-    .map((d) => d.id)
-    .filter((id) => {
-      const found = tweetDatas.find((td) => {
-        const firstRefTweet = td.referenced_tweets?.[0];
-        return firstRefTweet?.id === id;
-      });
-
-      return !found;
-    });
-
-  // now build up the text backwards
-
-  let textArr = [];
-  let nextTweet = tweetIdToTweet[lastTweetId];
-  while (nextTweet.referenced_tweets?.length) {
-    textArr.unshift(nextTweet.text);
-    nextTweet = tweetIdToTweet[nextTweet.referenced_tweets[0].id];
-  }
-  textArr.unshift(nextTweet.text);
-
-  return textArr.join("\n");
+  return tweetDatas
+    .sort((a, b) => {
+      const aDate = new Date(a.created_at);
+      const bDate = new Date(b.created_at);
+      return aDate < bDate ? -1 : 1;
+    })
+    .map((td) => td.text)
+    .join("\n");
 };
 
 const getAllUsers = async () => {
