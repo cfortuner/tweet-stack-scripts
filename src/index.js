@@ -58,17 +58,17 @@ import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
 // 5) Build the Index Data in firebase
 // --------------------
 
-// await updateIndex();
+await updateIndex();
 
 // testing
 
-const tweetDoc = await getTweetById("1084573970790113280");
-const tweetData = tweetDoc.data();
-const conversation = await getConversation(
-  "1084573970790113280",
-  tweetData.twitterUserId
-);
-const text = getEntireThreadText(conversation);
-const indexRecord = await createIndexRecord(tweetData);
+// const tweetDoc = await getTweetById("1084573970790113280");
+// const tweetData = tweetDoc.data();
+// const conversation = await getConversation(
+//   "1084573970790113280",
+//   tweetData.twitterUserId
+// );
+// const text = getEntireThreadText(conversation);
+// const indexRecord = await createIndexRecord(tweetData);
 
-console.log(indexRecord);
+// console.log(indexRecord);

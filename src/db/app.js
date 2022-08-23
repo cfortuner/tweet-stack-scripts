@@ -144,18 +144,20 @@ export const createIndexRecord = async (tweetData) => {
   topics = Array.from(new Set(topics));
   topicIds = Array.from(new Set(topicIds));
 
+  // twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
   return {
+    // indexed
     twitterUsername: userData.twitterUsername,
     twitterName: userData.twitterName,
     username: userData.name,
     userDescription: userData.description,
-    text: entireThreadText,
     followersCount: userData?.publicMetrics?.followers_count,
+    text: entireThreadText,
     likeCount: tweetData.publicMetrics.like_count,
     retweetCount: tweetData.publicMetrics.retweet_count,
     quoteCount: tweetData.publicMetrics.quote_count,
-    topics,
     phrases,
+    topics,
 
     // not indexed
     tweetId: tweetData.tweetId,

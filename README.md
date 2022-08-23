@@ -114,67 +114,21 @@ db.collection('dataSources').doc('twitter').collection('users')
 db.collection('dataSources').doc('twitter').collection('users').doc(userId).collection(tweets).document(tweetId)
 ```
 
-## Updating the Indices
+## Updating the index
 
-#### Users Index
-
-NOTE: NOT USING THIS FOR NOW.
-
-https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search?tab=usage
-
-User Fields
-
-- twitterUsername
-- twitterName
-- name
-- description
-- followersCount
-
-NOT INDEXED
-
-- userId
-- twitterUserId
-- tweetCount
-
-#### Index
+#### Thread Index
 
 https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search-g20h?tab=usage
 
 Index contains:
 
-- twitterUsername
-- twitterName
-- username
-- userDescription
-- text (for all threads)
-- likeCount
-- retweetCount
-- quoteCount
-- phrases
-- topics
-- followersCount
+    twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
 
-NOT INDEXED
+NOT INDEXED but included
 
 - tweetId
-- tweetType
-- replyCount
 - userId
 - twitterUserId
 - conversationIds
 - topicIds
 - phraseIds
-
-#### Topic Index
-
-NOTE: Not using this for now
-
-Phrase Index contains:
-
-- phrase
-- topics
-
-NOT INDEXED
-
-- phraseId
-- topicPriorities
