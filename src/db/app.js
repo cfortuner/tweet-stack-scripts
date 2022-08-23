@@ -9,6 +9,16 @@ export const updateUser = async (userId, userData) => {
     await db.collection("users").doc(userId).set(userData, { merge: true });
   }
 };
+export const getUserByTwitterUserId = async (twitterUserId) => {
+  const ss = await db
+    .collection("users")
+    .where("twitterUserId", "==", twitterUserId)
+    .get();
+  return ss.docs.pop();
+};
+export const getUserById = async (userId) => {
+  return await db.collection("users").doc(userId).get();
+};
 
 export const updateTweet = async (tweetId, tweetData) => {
   if (!(tweetId && tweetData)) {
@@ -87,10 +97,8 @@ export const updateUserIndexRecord = async (
   }
 };
 
-export const updateUsersIndex = async (userIds) => {
-  const userDocRefs = userIds?.length
-    ? await db.collection("users").where("id", "in", userIds).listDocuments()
-    : await db.collection("users").listDocuments();
+export const updateIndex = async () => {
+  await db.collection("users").listDocuments();
 
   const updateFn = async (userDocRef) => {
     const userDoc = await userDocRef.get();
@@ -106,7 +114,7 @@ export const updateUsersIndex = async (userIds) => {
     await updateUser(userDoc.id, { userIndexRecordId });
   };
 
-  const chunks = chunkArray(userDocRefs, 10);
+  const chunks = chunkArray(userDocRefs, 1);
   for (const chunk of chunks) {
     try {
       await Promise.all(chunk.map((userDocRef) => updateFn(userDocRef)));
@@ -119,90 +127,28 @@ export const updateUsersIndex = async (userIds) => {
 };
 
 const createUserIndexRecord = async (userId, userData) => {
-  // Get Phrases
-  const phraseIds = userData.phraseIds || [];
-  const phraseDocs = await getPhrasesByIds(phraseIds);
-  const phraseDatas = phraseDocs.map((phraseDoc) => phraseDoc.data());
-  const phrases = phraseDatas.map((phraseData) => phraseData.value);
-
-  // Update Topics and Topic Ids
-  let topicIds = [];
-  let topics = [];
-  for (const phraseData of phraseDatas) {
-    const topicDocs = await getTopicsByIds(phraseData.topicIds);
-    topics = topics.concat(topicDocs.map((topicDoc) => topicDoc.data().name));
-    topicIds = topicIds.concat(topicDocs.map((doc) => doc.id));
-  }
-
-  // Dedupe
-  phrases = Array.from(new Set(phrases));
-  topics = Array.from(new Set(topics));
-  topicIds = Array.from(new Set(topicIds));
-
   // 8/22/22 should at least include the following indexed fields
-  // twitterUsername,name,description,topics,phrases,followersCount,tweetCount
+  // twitterUsername,twitterName,name,description,followersCount
 
   // Create Record
   const userIndexRecord = {
     // indexed
     twitterUsername: userData.twitterUsername,
+    twitterName: userData.twitterName,
     name: userData.name,
-    description: description,
-    topics,
-    phrases,
+    description: userData.description,
     followersCount: userData.publicMetrics.followers_count,
 
     // not indexed, but available in the record
     userId,
-    twitterId: userData.twitterId,
-    topicIds,
-    phraseIds,
+    twitterUserId: userData.twitterUserId,
     tweetCount: userData.publicMetrics.tweet_count,
   };
 
   return userIndexRecord;
 };
 
-/**
- * 
- *   "tweet": {
-            "isThread": true,
-            "tweetId": "1387045851495755776",
-            "authorId": "1218201923947548672",
-            "isFirstTweet": true,
-            "text": "All the mistakes you will every make in your life have already been made by those before you. \n\nDo you really think the challenges you are facing are unique to you?\n\n• Read with an open mind \n• Listen to people’s stories + lessons \n• Converse with mentors + experts",
-            "publicMetrics": {
-                "retweet_count": 39,
-                "reply_count": 17,
-                "quote_count": 3,
-                "like_count": 220
-            },
-            "topicIds": []
- */
-
-const createThreadIndexRecord = async (tweetId, tweetData) => {
-  // Tweet data for Index
-  const threadIndexData = {
-    authorId: tweetData.authorId,
-    isFirstTweet: tweetData.isFirstTweet,
-    isThread: tweetData.isThread,
-    name: userData.name,
-    tweetId: tweetData.tweetId,
-    phraseIds: tweetData.phraseIds,
-    likeCount: tweetData.publicMetrics.like_count,
-    retweetCount: tweetData.publicMetrics.retweet_count,
-    quoteCount: tweetData.publicMetrics.quote_count,
-    replyCount: tweetData.publicMetrics.reply_count,
-  };
-
-  // get from user
-  const authorTwitterUsername = "";
-  const authorName = "";
-
-  // compile all thread text into one
-  const text = "";
-  const conversationIds = [];
-
+const createIndex = async (tweetId, tweetData, userId, userData) => {
   // Get Phrases
   const phraseIds = tweetData.phraseIds || [];
   const phraseDocs = await getPhrasesByIds(phraseIds);
@@ -214,7 +160,7 @@ const createThreadIndexRecord = async (tweetId, tweetData) => {
   let topics = [];
   for (const phraseData of phraseDatas) {
     const topicDocs = await getTopicsByIds(phraseData.topicIds);
-    topics = topics.concat(topicDocs.map((topicDoc) => topicDoc.data().name));
+    topics = topics.concat(topicDocs.map((topicDoc) => topicDoc.data().value));
     topicIds = topicIds.concat(topicDocs.map((doc) => doc.id));
   }
 
@@ -223,18 +169,166 @@ const createThreadIndexRecord = async (tweetId, tweetData) => {
   topics = Array.from(new Set(topics));
   topicIds = Array.from(new Set(topicIds));
 
+  // 8/22/22 should contain at least the following indexed fields
+  // authorName,topics,phrases,text,authorTwitterUsername,likeCount,retweetCount,quoteCount
+
   // Create Record
   const threadIndexRecord = {
-    ...threadIndexData,
-    authorTwitterUsername,
+    // indexed
     authorName,
-    text,
-    conversationIds,
-    phrases,
     topics,
+    phrases,
+    text, // text for all tweets
+    authorTwitterUsername,
+    likeCount: tweetData.publicMetrics.like_count,
+    retweetCount: tweetData.publicMetrics.retweet_count,
+    quoteCount: tweetData.publicMetrics.quote_count,
+
+    // not indexed
+    tweetId: tweetData.tweetId,
+    tweetType,
+    replyCount: tweetData.publicMetrics.reply_count,
+    authorId: tweetData.authorId,
+    isFirstTweet: tweetData.isFirstTweet,
+    isThread: tweetData.isThread,
+    conversationIds,
     topicIds,
-    phraseIds,
+    phraseIds: tweetData.phraseIds,
   };
 
   return threadIndexRecord;
+};
+
+const getAllUsers = async () => {
+  const userRefs = await db.collection("users").listDocuments();
+  let userDocs = [];
+  for (const userRef of userRefs) {
+    const userDoc = await userRef.get();
+    userDocs.push(userDoc);
+  }
+  return userDocs;
+};
+
+const getAllTweetsByType = async (tweetType) => {
+  const batchSize = 500;
+
+  let tweetPaginator = db
+    .collection("tweets")
+    .where("tweetType", "==", tweetType)
+    .limit(batchSize);
+
+  let tweetDocs = [];
+  while (true) {
+    const snapshots = await tweetPaginator.get();
+
+    tweetDocs = tweetDocs.concat(snapshots.docs);
+
+    if (snapshots.docs.length < batchSize) {
+      // last batch
+      break;
+    }
+
+    tweetPaginator = tweetPaginator.startAfter(snapshots.docs.pop());
+  }
+
+  return tweetDocs;
+};
+
+export const updateIndexV2 = async () => {
+  // get all threads of type Education
+  const tweetDocs = await getAllTweetsByType("Educational");
+
+  for (const tweetDoc of tweetDocs) {
+    const indexRecord = await createIndexRecord(tweetDoc, tweetData);
+    const tweetData = tweetDoc.data();
+    await updateUserIndexRecord(tweetData.indexRecordId, indexRecord);
+  }
+};
+
+export const getConversationIds = async (firstTweetId, twitterUserId) => {
+  const tweetDocs = await db
+    .collection("dataSources")
+    .doc(twitterUserId)
+    .collection("tweets")
+    .where("conversation_id", "==", firstTweetId)
+    .limit(1000)
+    .get();
+
+  return tweetDocs.docs.map((doc) => doc.data());
+};
+
+export const getEntireThreadText = (tweetDatas) => {
+  let tweetIdToTweet = {};
+  tweetDatas.forEach((td) => {
+    tweetIdToTweet[td.id] = td;
+  });
+
+  const lastTweetId = tweetDatas
+    .map((d) => d.id)
+    .filter((id) => {
+      const found = tweetDatas.find((td) => {
+        const firstRefTweet = td.referenced_tweets?.shift();
+        return firstRefTweet.id === id;
+      });
+
+      return !found;
+    });
+
+  // now build up the text backwards
+
+  let textArr = [];
+  let nextTweet = tweetIdToTweet[lastTweetId];
+  while (nextTweet.referenced_tweets?.length) {
+    textArr.unshift(nextTweet.text);
+    nextTweet = tweetIdToTweet[nextTweet.referenced_tweets[0].id];
+  }
+
+  return textArr.reverse().join("\n");
+};
+
+const createIndexRecord = async (tweetData) => {
+  const userDoc = await getUserById(tweetData.userId);
+  const userData = userDoc.data();
+
+  const conversationTweetDatas = await getConversation(tweetData.tweetId);
+  const entireThreadText = getEntireThreadText(
+    tweetData.tweetId,
+    conversationTweetDatas
+  );
+
+  const phraseDocs = await getPhrasesByIds(tweetData.phrases);
+  const phraseDatas = phraseDocs.map((phraseDoc) => phraseDoc.data());
+  const phraseIds = phraseDocs.map((d) => d.id);
+
+  let topicIds = [];
+  let topics = [];
+  for (const phraseData of phraseDatas) {
+    const topicDocs = await getTopicsByIds(phraseData.topicIds);
+    const topicDatas = topicDocs.map((t) => t.data());
+    topics = topics.concat(topicDatas.map((d) => d.value));
+    topicIds = topics.concat(topicDocs.map((d) => d.id));
+  }
+
+  return {
+    twitterUsername: userData.twitterUsername,
+    twitterName: userData.twitterName,
+    username: userData.name,
+    userDescription: userData.description,
+    text: entireThreadText,
+    followersCount: userData?.publicMetrics?.followers_count,
+    likeCount: tweetData.publicMetrics.like_count,
+    retweetCount: tweetData.publicMetrics.retweet_count,
+    quoteCount: tweetData.publicMetrics.quote_count,
+    phrases: phraseDatas.map((phrase) => phrase.value),
+    topics,
+
+    // not indexed
+    tweetId: tweetData.tweetId,
+    userId: userDoc.id,
+    twitterUserId: userData.twitterUserId,
+    firstTweetId: tweetData.id,
+    conversationIds,
+    topicIds,
+    phraseIds,
+  };
 };

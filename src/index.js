@@ -16,11 +16,12 @@ import {
   getPhraseById,
   getPhrasesByIds,
   getTopicsByIds,
+  getUserByTwitterUserId,
   updateTweet,
+  updateUser,
   updateUsersIndex,
 } from "./db/app.js";
 import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
-import { updateUser } from "./db/twitter.js";
 
 // --------------------
 // 1) FETCH & TRANSFORM
@@ -53,39 +54,4 @@ import { updateUser } from "./db/twitter.js";
 // 5) Build the Index Data in firebase
 // --------------------
 
-// Users
-/**
- * get users in firebase
- * for each user,
- *    create userIndexRecord
- *    download the user document
- *    add to userIndexRecord
- *      twitterUsername, name, description, followersCount, userId (document id), twitterId, phrase_ids
- *    create phrase list
- *    create topic list
- *    create phraseIds list
- *    create topicIds list
- *    for each phrase in user phraseIds (in document)
- *      download the phrase document
- *      add to phrase list
- *      for each topic_id in phrase (in document)
- *        download the topic document
- *        add topicId to topicIds list
- *        add topic to topics list
- *    add phrase list to userIndexRecord
- *    add topic list to userIndexRecord
- *    add topicIds list to userIndexRecord
- *
- *    upload usersIndexRecord with all records
- *    get usersIndexRecord document id
- *    update userDoc with usersIndexRecord document id
- */
-// await updateUsersIndex();
-
-/**
- * Update Threads index
- *
- * get tweets that are tweetType='Educational' && first tweet && thread in firebase
- * for each thread:
- *    create threadIndexRecord
- */
+await updateIndex();

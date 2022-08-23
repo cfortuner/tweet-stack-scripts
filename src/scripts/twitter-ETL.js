@@ -51,7 +51,7 @@ export const runUsersETL = async () => {
       // update user in db
       const userDoc = await db
         .collection("users")
-        .where("twitterId", "==", twitterUserData.id)
+        .where("twitterUserId", "==", twitterUserData.id)
         .get();
 
       let userId = userDoc.docs.pop()?.id;

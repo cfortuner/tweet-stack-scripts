@@ -55,9 +55,11 @@ users
     user
         twitterId
         description
+        twitterUsername
+        twitterName
         name
-        topicIds
         phraseIds
+        indexRecordId
 ```
 
 _tweets_
@@ -65,11 +67,14 @@ _tweets_
 ```
 tweets
     tweet
-        authorId
+        userId
+        tweetType
+        text
+        publicMetrics
         tweetId
         isThread
         isFirstTweet
-        phrase_ids
+        phraseIds
 ```
 
 _topics_
@@ -113,48 +118,64 @@ db.collection('dataSources').doc('twitter').collection('users').doc(userId).coll
 
 #### Users Index
 
+NOTE: NOT USING THIS FOR NOW.
+
 https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search?tab=usage
 
 User Fields
 
-- twitterUserName
+- twitterUsername
+- twitterName
 - name
 - description
-- topics
-- phrases
 - followersCount
 
 NOT INDEXED
 
 - userId
-- twitterId
-- topic_ids
-- phrase_ids
-- tweet_count
+- twitterUserId
+- tweetCount
 
-#### Threads Index
+#### Index
 
 https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search-g20h?tab=usage
 
-Thread Index contains:
+Index contains:
 
-- authorId
-- authorTwitterUsername
-- authorName
-- topics
-- phrases
+- twitterUsername
+- twitterName
+- username
+- userDescription
 - text (for all threads)
 - likeCount
-- reweetCount
+- retweetCount
 - quoteCount
+- phrases
+- topics
+- followersCount
 
 NOT INDEXED
 
+- tweetId
 - tweetType
 - replyCount
-- authorId
-- authorTwitterId
+- userId
+- twitterUserId
 - firstTweetId
 - conversationIds
 - topicIds
 - phraseIds
+
+#### Topic Index
+
+NOTE: Not using this for now
+
+Phrase Index contains:
+
+- phrase
+- topics
+
+NOT INDEXED
+
+- phraseId
+- topicPriorities
