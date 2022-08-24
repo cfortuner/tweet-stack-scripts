@@ -92,7 +92,7 @@ export const getPhrasesByIds = async (phraseIds) => {
 export const updateIndex = async () => {
   const tweetDocs = await getAllTweetsByType("Educational");
 
-  const chunks = chunkArray(tweetDocs, 10);
+  const chunks = chunkArray(tweetDocs, 500);
 
   const processDoc = async (tweetDoc) => {
     const tweetData = tweetDoc.data();
@@ -188,7 +188,7 @@ export const createIndexRecord = async (tweetData) => {
 export const updateIndexRecord = async (indexRecordId, indexRecord) => {
   if (indexRecordId) {
     await db
-      .collection("thread-index")
+      .collection("threads-index")
       .doc(indexRecordId)
       .set(indexRecord, { merge: true });
     return indexRecordId;
