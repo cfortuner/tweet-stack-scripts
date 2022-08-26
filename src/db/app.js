@@ -96,7 +96,7 @@ export const updateIndex = async () => {
 
   const processDoc = async (tweetDoc) => {
     const tweetData = tweetDoc.data();
-    const indexRecord = await createIndexRecord(tweetData);
+    const indexRecord = await createThreadIndexRecord(tweetData);
     const indexRecordId = await updateIndexRecord(
       tweetData.indexRecordId,
       indexRecord
@@ -122,14 +122,25 @@ export const updateIndex = async () => {
   return failures;
 };
 
-export const createIndexRecord = async (tweetData) => {
+export const createThreadIndexRecord = async (tweetData) => {
   const userDoc = await getUserById(tweetData.userId);
   const userData = userDoc.data();
+
+  const twitterUserData = await getTwitterUserData(userData.twitterUserId);
+  const twitterProfileUrl = twitterUserData.url;
+  const twitterProfileImageUrl = twitterUserData.profile_image_url;
+
+  const createdAt = await getCreatedAtDate(
+    tweetData.tweetId,
+    userData.twitterUserId
+  );
+  const createdAtTimestamp = new Date(createdAt);
 
   const conversationTweetDatas = await getConversation(
     tweetData.tweetId,
     userData.twitterUserId
   );
+  const firstTweetText = tweetData.text;
   const entireThreadText = getEntireThreadText(conversationTweetDatas);
 
   let phraseIds = [];
@@ -162,7 +173,6 @@ export const createIndexRecord = async (tweetData) => {
 
   // twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
   return {
-    // indexed
     twitterUsername: userData.twitterUsername,
     twitterName: userData.twitterName,
     username: userData.name,
@@ -174,14 +184,16 @@ export const createIndexRecord = async (tweetData) => {
     quoteCount: tweetData.publicMetrics.quote_count,
     phrases,
     topics,
-
-    // not indexed
+    createdAtTimestamp: createdAtTimestamp,
+    firstTweetText,
     tweetId: tweetData.tweetId,
     userId: userDoc.id,
     twitterUserId: userData.twitterUserId,
     conversationIds: conversationTweetDatas.map((td) => td.id),
     topicIds,
     phraseIds,
+    twitterProfileUrl,
+    twitterProfileImageUrl,
   };
 };
 
@@ -256,4 +268,26 @@ const getAllTweetsByType = async (tweetType) => {
   }
 
   return tweetDocs;
+};
+
+const getCreatedAtDate = async (tweetId, twitterUserId) => {
+  const doc = await db
+    .collection("dataSources")
+    .doc("twitter")
+    .collection("users")
+    .doc(twitterUserId)
+    .collection("tweets")
+    .doc(tweetId)
+    .get();
+  return doc.data()?.created_at;
+};
+
+export const getTwitterUserData = async (twitterUserId) => {
+  const doc = await db
+    .collection("dataSources")
+    .doc("twitter")
+    .collection("users")
+    .doc(twitterUserId)
+    .get();
+  return doc.data();
 };

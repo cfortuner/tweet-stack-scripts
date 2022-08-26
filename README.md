@@ -2,8 +2,6 @@
 
 ## setup
 
-NOTE: pip install may fail on tokenizers. follow steps here to install https://huggingface.co/docs/tokenizers/installation
-
 ```
 npm i
 pip install -r requirements.txt
@@ -116,9 +114,29 @@ db.collection('dataSources').doc('twitter').collection('users').doc(userId).coll
 
 ## Updating the index
 
+If you reconfigure the indexed fields, you need to run this ->
+
 #### Thread Index
 
 https://console.firebase.google.com/u/2/project/tweetstack-29218/extensions/instances/firestore-algolia-search-g20h?tab=usage
+
+```
+npx firestore-algolia-search
+```
+
+then fill in:
+
+```
+What is the Region? us-east4
+What is the Project Id? tweetstack-29218
+What is the Algolia App Id? 617CKR15Z7
+What is the Algolia Api Key? { unspecified parameter }
+What is the Algolia Index Name? threads-index
+What is the Collection Path? threads-index
+What are the Fields to extract? twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
+What is the Transform Function? { unspecified parameter }
+What is the path to the Google Application Credential File? </path/to/service/account/key>
+```
 
 Index contains:
 

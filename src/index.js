@@ -13,7 +13,6 @@ import { chunkArray, readFile, writeFile } from "./helpers.js";
 import {
   addPhrase,
   addTopic,
-  createIndexRecord,
   getConversation,
   getEntireThreadText,
   getPhraseById,
