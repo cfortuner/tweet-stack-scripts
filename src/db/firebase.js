@@ -10,4 +10,8 @@ const storage = admin.storage(app);
 const db = admin.firestore(app);
 const firestore = admin.firestore;
 
+db.settings({
+  ignoreUndefinedProperties: true,
+});
+
 export { app, auth, storage, db, firestore };

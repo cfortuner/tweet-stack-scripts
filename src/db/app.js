@@ -4,9 +4,14 @@ import { db, firestore } from "./firebase.js";
 
 export const updateUser = async (userId, userData) => {
   if (!userId) {
-    await db.collection("users").add(userData);
+    await db
+      .collection("users")
+      .add(userData, { ignoreUndefinedProperties: true });
   } else {
-    await db.collection("users").doc(userId).set(userData, { merge: true });
+    await db
+      .collection("users")
+      .doc(userId)
+      .set(userData, { merge: true, ignoreUndefinedProperties: true });
   }
 };
 export const getUserByTwitterUserId = async (twitterUserId) => {
@@ -24,7 +29,10 @@ export const updateTweet = async (tweetId, tweetData) => {
   if (!(tweetId && tweetData)) {
     throw "error updating tweet";
   }
-  await db.collection("tweets").doc(tweetId).set(tweetData, { merge: true });
+  await db
+    .collection("tweets")
+    .doc(tweetId)
+    .set(tweetData, { merge: true, ignoreUndefinedProperties: true });
 };
 
 export const getTweetById = async (tweetId) => {
@@ -129,6 +137,15 @@ export const createThreadIndexRecord = async (tweetData) => {
   const twitterUserData = await getTwitterUserData(userData.twitterUserId);
   const twitterProfileUrl = twitterUserData.url;
   const twitterProfileImageUrl = twitterUserData.profile_image_url;
+  const originalTweetDoc = await db
+    .collection("dataSources")
+    .doc("twitter")
+    .collection("users")
+    .doc(userData.twitterUserId)
+    .collection("tweets")
+    .doc(tweetData.tweetId)
+    .get();
+  const originalTweetData = originalTweetDoc.data();
 
   const createdAt = await getCreatedAtDate(
     tweetData.tweetId,
@@ -140,7 +157,9 @@ export const createThreadIndexRecord = async (tweetData) => {
     tweetData.tweetId,
     userData.twitterUserId
   );
-  const firstTweetText = tweetData.text;
+
+  // use the original text formatting
+  const firstTweetText = originalTweetData.text;
   const entireThreadText = getEntireThreadText(conversationTweetDatas);
 
   let phraseIds = [];
@@ -171,12 +190,24 @@ export const createThreadIndexRecord = async (tweetData) => {
     topicIds = Array.from(new Set(topicIds));
   }
 
+  // update data in Tweets and Users to match indexed data (only one time)
+  await updateUser(userDoc.id, {
+    twitterProfileUrl,
+    twitterProfileImageUrl,
+    userEntities: userData.entities,
+    description: twitterUserData.description,
+  });
+  await updateTweet(tweetData.tweetId, {
+    firstTweetText,
+    tweetEntities: originalTweetData.entities,
+  });
+
   // twitterUsername,twitterName,username,userDescription,followersCount,text,likeCount,retweetCount,quoteCount,phrases,topics
   return {
     twitterUsername: userData.twitterUsername,
     twitterName: userData.twitterName,
     username: userData.name,
-    userDescription: userData.description,
+    userDescription: twitterUserData.description,
     followersCount: userData?.publicMetrics?.followers_count,
     text: entireThreadText,
     likeCount: tweetData.publicMetrics.like_count,
@@ -194,6 +225,8 @@ export const createThreadIndexRecord = async (tweetData) => {
     phraseIds,
     twitterProfileUrl,
     twitterProfileImageUrl,
+    tweetEntities: originalTweetData.entities || undefined,
+    userEntities: userData.entities || undefined,
   };
 };
 
@@ -202,11 +235,13 @@ export const updateIndexRecord = async (indexRecordId, indexRecord) => {
     await db
       .collection("threads-index")
       .doc(indexRecordId)
-      .set(indexRecord, { merge: true });
+      .set(indexRecord, { merge: true, ignoreUndefinedProperties: true });
     return indexRecordId;
   }
 
-  const doc = await db.collection("index").add(indexRecord);
+  const doc = await db
+    .collection("index")
+    .add(indexRecord, { ignoreUndefinedProperties: true });
   return doc.id;
 };
 
