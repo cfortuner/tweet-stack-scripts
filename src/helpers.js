@@ -30,8 +30,12 @@ export const writeFile = (folder, filename, data) => {
 };
 
 export const readFile = (folder, filename) => {
-  const buf = fs.readFileSync(`./${folder}/${filename}`, "utf-8");
-  return JSON.parse(buf);
+  try {
+    const buf = fs.readFileSync(`./${folder}/${filename}`, "utf-8");
+    return JSON.parse(buf);
+  } catch (e) {
+    return;
+  }
 };
 
 export const shuffle = (array) => {

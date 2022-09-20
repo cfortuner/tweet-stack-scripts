@@ -24,10 +24,11 @@ const splitParts = (content, maxTokens) => {
 
 const prompts = [
   {
-    name: "transcript to story",
-    prompt: (transcript) =>
-      `Convert this transcript into a story about Alex expanding upon the details:\nTranscript: ${transcript}\n`,
+    name: "transcript to summary",
+    prompt: (chapter, transcript, last) =>
+      `Transcript:${transcript}\nA list of paragraphs based on each topic in the transcript:`,
     type: "summary",
+    times: 2,
   },
 ];
 
@@ -75,22 +76,23 @@ export const submit = async (prompt, max_tokens = 300) => {
   return completion.data.choices[0];
 };
 
-const runTranscriptPipeline = async (transcript) => {
+const runTranscriptPipeline = async (chapter, transcript) => {
   let content = transcript;
+  let last = "";
+  let output = "";
   for (const prompt of prompts) {
-    const p = prompt.prompt(content);
-    const r = await submit(p, 1000);
-    content = r.text;
+    let i = 0;
+    const p = prompt.prompt(chapter, content, last);
+    let r = await submit(p, 1000);
+    output += " " + r.text;
 
     await sleepSecs(2);
   }
 
-  return content;
+  return output;
 };
 
-const getChaptersFromTranscript = () => {
-  const data = readFile(".", "cleaned.json");
-
+const getChaptersFromTranscript = (data) => {
   // build each chapter's subtitles
   const chapterSubtitles = data.cleaned.chapterSubtitles.reduce((acc, cs) => {
     const transcript = cs.subtitles
@@ -99,7 +101,7 @@ const getChaptersFromTranscript = () => {
       }, "")
       .trim();
 
-    let sections = splitParts(transcript, 2000);
+    let sections = splitParts(transcript, 3000);
 
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i].trim();
@@ -117,13 +119,13 @@ const getChaptersFromTranscript = () => {
   return chapterSubtitles;
 };
 
-export const runPodcastTest2 = async () => {
+export const runPodcastToThread = async (data, outputFolder) => {
   // chapters: { title, part }[]
-  const chapters = getChaptersFromTranscript();
+  const chapters = getChaptersFromTranscript(data);
 
   let results = [];
   for (const { title, part, section } of chapters) {
-    let output = await runTranscriptPipeline(section);
+    let output = await runTranscriptPipeline(title, section);
 
     // make sure it's told in first person about alex
     // output = utilityPrompts.clean.firstPerson(output, "Alex");
@@ -151,12 +153,13 @@ export const runPodcastTest2 = async () => {
   }
 
   try {
-    writeFile(".", "pipeline-result.json", results);
+    writeFile(`./${outputFolder}`, "podcastToThread.json", results);
   } catch (e) {}
+
+  return await cleanResults(results);
 };
 
-export const cleanResults = async () => {
-  let results = readFile(".", "pipeline-result.json");
+export const cleanResults = async (results) => {
   const combined = results.reduce((acc, r, i) => {
     if (r.part > 1) {
       acc[acc.length - 1].output += " " + r.output;
@@ -166,24 +169,13 @@ export const cleanResults = async () => {
     return acc;
   }, []);
 
-  // make sure it's told in first person about alex
-  // output = utilityPrompts.clean.firstPerson(output, "Alex");
-
-  // const emotionalHook = await submit(
-  //   utilityPrompts.hooks.invokeEmotion(output)
-  // );
-  // const whyReadThisHook = await submit(
-  //   utilityPrompts.hooks.whyReadThis(output)
-  // );
-  // const sentenceSummary = await submit(
-  //   utilityPrompts.summaries.hooksToSentences(output)
-  // );
-
   await sleepSecs(2);
 
   try {
-    writeFile(".", "combined-results.json", combined);
+    writeFile(`./${outputFolder}`, "podcastToThreadClean.json", combined);
   } catch (e) {}
+
+  return combined;
 };
 
 export const addStyles = async () => {

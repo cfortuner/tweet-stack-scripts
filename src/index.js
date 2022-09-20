@@ -31,10 +31,10 @@ import {
 } from "./scripts/ghostwriting/initial-test.js";
 import { runPodcastTest } from "./scripts/ghostwriting/podcast-test.js";
 import {
-  addStyles,
   cleanResults,
-  runPodcastTest2,
+  runPodcastToThread,
 } from "./scripts/ghostwriting/prompt-pipelining.js";
+import { cleanYTData } from "./scripts/ghostwriting/extract-yt-data.js";
 
 // --------------------
 // 1) FETCH & TRANSFORM
@@ -83,36 +83,38 @@ import {
 
 // writeFile("./scratch/ghostwriting", "shaan_formatted", JSON.stringify(r));
 
-// await runPodcastTest2();
-// await cleanResults();
-// await addStyles();
-
-// now upload stuff to firebase
-
-// the yt data
-const data = readFile(".", "cleaned.json");
-
-await db
-  .collection("dataSources")
-  .doc("youtube")
-  .collection("videos")
-  .doc(data.id)
-  .set(
-    {
-      ...data,
-    },
-    { merge: true }
-  );
-
-// final processed data
-const final = readFile(".", "final.json");
-
-for (const draft of final) {
+const uploadToFirebase = async (videoData, results) => {
   await db
     .collection("dataSources")
     .doc("youtube")
     .collection("videos")
-    .doc(data.id)
-    .collection("drafts")
-    .add({ ...draft });
+    .doc(videoData.id)
+    .set(
+      {
+        ...videoData,
+      },
+      { merge: true }
+    );
+
+  for (const draft of results) {
+    await db
+      .collection("dataSources")
+      .doc("youtube")
+      .collection("videos")
+      .doc(videoData.id)
+      .collection("drafts")
+      .add({ ...draft });
+  }
+};
+
+const outputFolder = "shaan";
+let videoData = readFile(`./${outputFolder}`, "cleaned.json");
+if (!videoData) {
+  videoData = await cleanYTData("shaan-data.json", outputFolder);
 }
+
+let results = readFile(`./${outputFolder}`, "podcastToThread.json");
+if (!results) {
+  results = await runPodcastToThread(videoData, outputFolder);
+}
+await uploadToFirebase(videoData, results);
