@@ -25,6 +25,16 @@ import {
   updateUser,
 } from "./db/app.js";
 import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
+import {
+  mostViralTweetsDataset,
+  runGhostwritingTest,
+} from "./scripts/ghostwriting/initial-test.js";
+import { runPodcastTest } from "./scripts/ghostwriting/podcast-test.js";
+import {
+  addStyles,
+  cleanResults,
+  runPodcastTest2,
+} from "./scripts/ghostwriting/prompt-pipelining.js";
 
 // --------------------
 // 1) FETCH & TRANSFORM
@@ -57,4 +67,52 @@ import { sleepSecs } from "twitter-api-v2/dist/v1/media-helpers.v1.js";
 // 5) Build the Index Data in firebase
 // --------------------
 
-await updateIndex();
+// await updateIndex();
+
+// await runGhostwritingTest();
+
+// const f = readFile("./scratch/ghostwriting", "shaan");
+// const d = JSON.parse(f);
+
+// const r = d.map((f) => {
+//   return {
+//     tweetId: f.tweet.tweetId,
+//     choices: f.choices?.data?.text,
+//   };
+// });
+
+// writeFile("./scratch/ghostwriting", "shaan_formatted", JSON.stringify(r));
+
+// await runPodcastTest2();
+// await cleanResults();
+// await addStyles();
+
+// now upload stuff to firebase
+
+// the yt data
+const data = readFile(".", "cleaned.json");
+
+await db
+  .collection("dataSources")
+  .doc("youtube")
+  .collection("videos")
+  .doc(data.id)
+  .set(
+    {
+      ...data,
+    },
+    { merge: true }
+  );
+
+// final processed data
+const final = readFile(".", "final.json");
+
+for (const draft of final) {
+  await db
+    .collection("dataSources")
+    .doc("youtube")
+    .collection("videos")
+    .doc(data.id)
+    .collection("drafts")
+    .add({ ...draft });
+}
